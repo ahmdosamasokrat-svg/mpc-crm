@@ -1,0 +1,544 @@
+@php
+    $crmSidebarDashboardActive = request()->routeIs(
+        'dashboard'
+    );
+
+    $crmSidebarKanbanActive = request()->routeIs('v2.leads.kanban');
+
+    $crmSidebarLeadsActive = ! $crmSidebarKanbanActive
+        && request()->routeIs(
+            'v2.leads',
+            'v2.leads.*'
+        );
+
+    $crmSidebarTasksActive = request()->routeIs(
+        'v2.followups',
+        'v2.tasks.*'
+    );
+
+    $crmSidebarCampaignsActive = request()->routeIs(
+        'v2.campaigns.*'
+    );
+
+    $crmSidebarQuotationsActive = request()->routeIs(
+        'v2.quotations.*'
+    );
+
+    $crmSidebarSettingsActive = request()->routeIs(
+        'v2.settings',
+        'v2.settings.*'
+    );
+
+    $crmSidebarTechnicalSupportActive = request()->routeIs(
+        'v2.technical-support.*'
+    );
+
+    $crmSidebarEmployeeReportsActive = request()->routeIs(
+        'v2.reports.employees',
+        'v2.reports.employees.*'
+    ) || request()->is('reports/employees*');
+
+    $crmSidebarLeadCount = isset($totalLeads)
+        ? (int) $totalLeads
+        : 0;
+
+    $crmSidebarTaskCount = isset($totalTasks)
+        ? (int) $totalTasks
+        : 0;
+@endphp
+
+{{-- CRM SHARED SIDEBAR ASSET V1 START --}}
+@once
+<script>
+ (() => {
+  const root = document.documentElement;
+  try {
+   if (localStorage.getItem('sokrat.crm.sidebar.collapsed') === '1') {
+    root.classList.add('crm-sidebar-collapsed');
+   }
+   const savedTheme = localStorage.getItem('sokrat.crm.theme');
+   root.classList.toggle(
+    'dark-mode',
+    savedTheme === 'dark'
+   );
+  } catch (error) {}
+ })();
+</script>
+@endonce
+@once
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+@endonce
+@unless($crmSidebarAssetsLoaded ?? false)
+@once
+
+<link
+ rel="stylesheet"
+ href="{{ asset('crm-sidebar-shared.css') . '?v=' . time() }}"
+>
+@endonce
+@once
+<link
+ rel="stylesheet"
+ href="{{ asset('crm-dropdown.css') . '?v=' . time() }}"
+>
+@endonce
+@once
+<link
+ rel="stylesheet"
+ href="{{ asset('css/tajawal.css') }}?v={{ time() }}"
+>
+@endonce
+@endunless
+{{-- CRM SHARED SIDEBAR ASSET V1 END --}}
+
+<aside class="crm-side side" id="crmSidebar">
+  <a
+   class="crm-side-brand brand"
+   href="{{ route('dashboard') }}"
+  >
+   <img
+    class="logo crm-logo-light"
+    src="{{ asset('images/sokrat-pro-tech.png') }}"
+    alt="Sokrat PRO"
+   >
+   <img
+    class="logo crm-logo-dark"
+    src="{{ asset('images/sokrat-pro-tech-dark.png') }}"
+    alt="Sokrat PRO Tech"
+   >
+
+   <span>
+    <strong>SokratCRM</strong>
+   </span>
+  </a>
+
+  <button
+   class="crm-sidebar-collapse-btn"
+   id="crmSidebarCollapseBtn"
+   type="button"
+   aria-label="{{ __('crm.collapse_sidebar') }}"
+   aria-pressed="false"
+   title="{{ __('crm.collapse_sidebar') }} (Ctrl+B)"
+  >
+   <svg class="crm-collapse-svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M10 3L5 8L10 13" />
+   </svg>
+  </button>
+
+ <p class="crm-side-caption caption">
+  {{ __('crm.main_menu') }}
+ </p>
+
+ <nav class="crm-side-nav nav">
+  @can('dashboard.view')
+  <a
+   class="crm-link link {{ $crmSidebarDashboardActive ? 'active' : '' }}"
+   href="{{ route('dashboard') }}"
+  >
+   <span class="crm-ico ico"><i class="bi bi-house-add"></i></span>
+   <span class="crm-label label">{{ __('crm.dashboard') }}</span>
+  </a>
+  @endcan
+
+  @can('leads.view')
+  <a
+   class="crm-link link {{ $crmSidebarKanbanActive ? 'active' : '' }}"
+   href="{{ route('v2.leads.kanban') }}">
+   <span class="crm-ico ico"><i class="bi bi-kanban"></i></span>
+   <span class="crm-label label">{{ __('crm.kanban') }}</span>
+  </a>
+  @endcan
+  @if(auth()->user()?->can('leads.view') || auth()->user()?->can('leads.create') || auth()->user()?->can('leads.import') || auth()->user()?->can('leads.export'))
+  <div>
+   <button
+    class="crm-toggle toggle {{ $crmSidebarLeadsActive ? 'active' : '' }}"
+    type="button"
+    data-crm-menu="crmLeadsMenu"
+    data-menu="crmLeadsMenu"
+    aria-expanded="{{ $crmSidebarLeadsActive ? 'true' : 'false' }}"
+    aria-controls="crmLeadsMenu"
+   >
+    <span class="crm-ico ico"><i class="bi bi-people"></i></span>
+
+    <span class="crm-label label">
+     {{ __('crm.leads') }}
+    </span>
+
+
+    <span class="crm-arrow arrow">
+     <svg class="crm-arrow-svg" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 2L6.5 5L3.5 8" />
+     </svg>
+    </span>
+   </button>
+
+   <div
+    class="crm-sub sub {{ $crmSidebarLeadsActive ? 'open' : '' }}"
+    id="crmLeadsMenu"
+   >
+    <div class="crm-sub-inner">
+     <nav>
+      @can('leads.view')
+      <a
+       class="{{ request()->routeIs('v2.leads') ? 'active' : '' }}"
+       href="{{ route('v2.leads') }}"
+      >
+       {{ __('crm.view_leads') }}
+      </a>
+      @endcan
+
+      @can('leads.create')
+      <a
+       class="{{ request()->routeIs('v2.leads.create') ? 'active' : '' }}"
+       href="{{ route('v2.leads.create') }}"
+      >
+       {{ __('crm.add_lead') }}
+      </a>
+      @endcan
+
+      @can('leads.import')
+      <a
+       class="{{ request()->routeIs('v2.leads.import') ? 'active' : '' }}"
+       href="{{ route('v2.leads.import') }}"
+      >
+       {{ __('crm.import_leads') }}
+      </a>
+      @endcan
+
+      @can('leads.export')
+      <a
+       class="{{ request()->routeIs('v2.leads.export') ? 'active' : '' }}"
+       href="{{ route('v2.leads.export') }}"
+      >
+       {{ __('crm.export_leads') }}
+      </a>
+      @endcan
+      @can('leads.trash.view')
+      <a
+       class="{{ request()->routeIs('v2.leads.trash.*') ? 'active' : '' }}"
+       href="{{ route('v2.leads.trash.index') }}"
+      >
+       {{ __('سلة المهملات') }}
+      </a>
+      @endcan
+     </nav>
+    </div>
+   </div>
+  </div>
+  @endif
+  @can('tasks.view')
+  <div>
+   <button
+    class="crm-toggle toggle {{ $crmSidebarTasksActive ? 'active' : '' }}"
+    type="button"
+    data-crm-menu="crmTasksMenu"
+    data-menu="crmTasksMenu"
+    aria-expanded="{{ $crmSidebarTasksActive ? 'true' : 'false' }}"
+    aria-controls="crmTasksMenu"
+   >
+    <span class="crm-ico ico"><i class="bi bi-list-task"></i></span>
+
+    <span class="crm-label label">
+     {{ __('crm.tasks_and_followups') }}
+    </span>
+
+
+    <span class="crm-arrow arrow">
+     <svg class="crm-arrow-svg" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 2L6.5 5L3.5 8" />
+     </svg>
+    </span>
+   </button>
+
+   <div
+    class="crm-sub sub {{ $crmSidebarTasksActive ? 'open' : '' }}"
+    id="crmTasksMenu"
+   >
+    <div class="crm-sub-inner">
+     <nav>
+      <a
+       class="{{ request()->routeIs('v2.tasks.daily', 'v2.tasks.upcoming', 'v2.followups.scope') && !request()->filled('stage_id') ? 'active' : '' }}"
+       href="{{ route('v2.tasks.daily') }}"
+      >
+       {{ __('crm.daily_tasks') }}
+      </a>
+      @foreach (($sidebarPipelineStages ?? []) as $sidebarStage)
+       <a
+        class="crm-task-status-link {{ request()->routeIs('v2.tasks.daily') && (string) request('stage_id') === (string) $sidebarStage->id ? 'active' : '' }}"
+        href="{{ route('v2.tasks.daily', ['stage_id' => $sidebarStage->id]) }}"
+       >
+        {{ $sidebarStage->localizedName() }}
+       </a>
+      @endforeach
+     </nav>
+    </div>
+   </div>
+  </div>
+  @endcan
+  @if(auth()->user()?->can('campaigns.view') || auth()->user()?->can('campaigns.create') || auth()->user()?->can('campaigns.reports'))
+  <div>
+   <button
+    class="crm-toggle toggle {{ $crmSidebarCampaignsActive ? 'active' : '' }}"
+    type="button"
+    data-crm-menu="crmCampaignsMenu"
+    data-menu="crmCampaignsMenu"
+    aria-expanded="{{ $crmSidebarCampaignsActive ? 'true' : 'false' }}"
+    aria-controls="crmCampaignsMenu"
+   >
+    <span class="crm-ico ico"><i class="bi bi-shop-window"></i></span>
+
+    <span class="crm-label label">
+     {{ __('crm.campaigns') }}
+    </span>
+
+    <span class="crm-arrow arrow">
+     <svg class="crm-arrow-svg" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 2L6.5 5L3.5 8" />
+     </svg>
+    </span>
+   </button>
+
+   <div
+    class="crm-sub sub {{ $crmSidebarCampaignsActive ? 'open' : '' }}"
+    id="crmCampaignsMenu"
+   >
+    <div class="crm-sub-inner">
+     <nav>
+      @can('campaigns.view')
+      <a
+       class="{{ request()->routeIs('v2.campaigns.index') ? 'active' : '' }}"
+       href="{{ route('v2.campaigns.index') }}"
+      >
+       {{ __('crm.view_campaigns') }}
+      </a>
+      @endcan
+
+      @can('campaigns.create')
+      <a
+       class="{{ request()->routeIs('v2.campaigns.create') ? 'active' : '' }}"
+       href="{{ route('v2.campaigns.create') }}"
+      >
+       {{ __('crm.add_campaign') }}
+      </a>
+      @endcan
+
+      @can('campaigns.reports')
+      <a
+       class="{{ request()->routeIs('v2.campaigns.reports') ? 'active' : '' }}"
+       href="{{ route('v2.campaigns.reports') }}"
+      >
+       {{ __('crm.campaign_reports') }}
+      </a>
+      @endcan
+     </nav>
+    </div>
+   </div>
+  </div>
+  @endif
+  @if(auth()->user()?->can('quotations.view') || auth()->user()?->can('quotations.create'))
+  <div>
+   <button
+    class="crm-toggle toggle {{ $crmSidebarQuotationsActive ? 'active' : '' }}"
+    type="button"
+    data-crm-menu="crmQuotationsMenu"
+    data-menu="crmQuotationsMenu"
+    aria-expanded="{{ $crmSidebarQuotationsActive ? 'true' : 'false' }}"
+    aria-controls="crmQuotationsMenu"
+   >
+    <span class="crm-ico ico"><i class="bi bi-file-earmark-text"></i></span>
+
+    <span class="crm-label label">
+     {{ __('crm.price_quotation') }}
+    </span>
+
+    <span class="crm-arrow arrow">
+     <svg class="crm-arrow-svg" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 2L6.5 5L3.5 8" />
+     </svg>
+    </span>
+   </button>
+
+   <div
+    class="crm-sub sub {{ $crmSidebarQuotationsActive ? 'open' : '' }}"
+    id="crmQuotationsMenu"
+   >
+    <div class="crm-sub-inner">
+     <nav>
+      @can('quotations.create')
+      <a
+       class="{{ request()->routeIs('v2.quotations.create') ? 'active' : '' }}"
+       href="{{ route('v2.quotations.create') }}"
+      >
+       {{ __('crm.create_quotation') }}
+      </a>
+      @endcan
+
+      @can('quotations.view')
+      <a
+       class="{{
+        request()->routeIs(
+         'v2.quotations.index',
+         'v2.quotations.show'
+        )
+         ? 'active'
+         : ''
+       }}"
+       href="{{ route('v2.quotations.index') }}"
+      >
+       {{ __('crm.quotations') }}
+      </a>
+      @endcan
+     </nav>
+    </div>
+   </div>
+  </div>
+  @endif
+  @if(auth()->user()?->isSuperAdmin() || auth()->user()?->can('reports.employees.view') || auth()->user()?->can('reports.view'))
+  <a
+   class="crm-link link {{ $crmSidebarEmployeeReportsActive ? 'active' : '' }}"
+   href="{{ route('v2.reports.employees.index') }}"
+  >
+   <span class="crm-ico ico"><i class="bi bi-bar-chart-line"></i></span>
+   <span class="crm-label label">{{ __('crm.employee_reports') }}</span>
+  </a>
+  @endif
+  @can('calendar.view')
+  <a
+   class="crm-link link {{ request()->routeIs('v2.calendar.*') ? 'active' : '' }}"
+   href="{{ route('v2.calendar.index') }}"
+  >
+   <span class="crm-ico ico"><i class="bi bi-calendar3"></i></span>
+   <span class="crm-label label">{{ __('crm.calendar_and_events') }}</span>
+  </a>
+  @endcan
+
+  @if(app(\App\Services\VoipService::class)->isConfigured())
+  @can('voip.live_panel')
+  <a
+   class="crm-link link {{ request()->routeIs('v2.voip.live') ? 'active' : '' }}"
+   href="{{ route('v2.voip.live') }}"
+  >
+   <span class="crm-ico ico"><i class="bi bi-telephone-inbound"></i></span>
+   <span class="crm-label label">{{ __('crm.call_center_monitoring') }}</span>
+  </a>
+  @endcan
+  @endif
+
+  @if(auth()->user()?->can('technical_support.view') || auth()->user()?->can('technical_support.reports') || auth()->user()?->can('technical_support.tasks.manage') || request()->routeIs('v2.technical-support.*'))
+  <div>
+   <button
+    class="crm-toggle toggle {{ $crmSidebarTechnicalSupportActive ? 'active' : '' }}"
+    type="button"
+    data-crm-menu="crmTechnicalSupportMenu"
+    data-menu="crmTechnicalSupportMenu"
+    aria-expanded="{{ $crmSidebarTechnicalSupportActive ? 'true' : 'false' }}"
+    aria-controls="crmTechnicalSupportMenu"
+   >
+    <span class="crm-ico ico"><i class="bi bi-headset"></i></span>
+    <span class="crm-label label">{{ __('crm.technical_support') }}</span>
+    <span class="crm-arrow arrow">
+     <svg class="crm-arrow-svg" viewBox="0 0 10 10" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 2L6.5 5L3.5 8" />
+     </svg>
+    </span>
+   </button>
+
+   <div
+    class="crm-sub sub {{ $crmSidebarTechnicalSupportActive ? 'open' : '' }}"
+    id="crmTechnicalSupportMenu"
+   >
+    <div class="crm-sub-inner">
+     <nav>
+      @can('technical_support.view')
+      <a
+       class="{{ request()->routeIs('v2.technical-support.index', 'v2.technical-support.cards.*', 'v2.technical-support.tickets.*', 'v2.technical-support.ips.*', 'v2.technical-support.devices.*') ? 'active' : '' }}"
+       href="{{ route('v2.technical-support.index') }}"
+      >
+       {{ __('crm.support_servers') }}
+      </a>
+      <a
+       class="{{ request()->routeIs('v2.technical-support.team*') ? 'active' : '' }}"
+       href="{{ route('v2.technical-support.team') }}"
+      >
+       {{ __('crm.support_team') }}
+      </a>
+      @endcan
+      @can('technical_support.reports')
+      <a
+       class="{{ request()->routeIs('v2.technical-support.reports') ? 'active' : '' }}"
+       href="{{ route('v2.technical-support.reports') }}"
+      >
+       {{ __('crm.support_reports') }}
+      </a>
+      @endcan
+      <a
+       class="{{ request()->routeIs('v2.technical-support.tasks.*') ? 'active' : '' }}"
+       href="{{ route('v2.technical-support.tasks.index') }}"
+      >
+       {{ __('crm.support_tasks') }}
+      </a>
+     </nav>
+    </div>
+   </div>
+  </div>
+  @endif
+
+
+  @can('settings.access')
+  <a
+   class="crm-link link {{ $crmSidebarSettingsActive ? 'active' : '' }}"
+   href="{{ route('v2.settings') }}"
+  >
+   <span class="crm-ico ico"><i class="bi bi-toggles"></i></span>
+   <span class="crm-label label">{{ __('crm.settings') }}</span>
+  </a>
+  @endcan
+
+</aside>
+
+<button class="crm-overlay overlay" id="crmSidebarOverlay" type="button" aria-label="{{ __('crm.close_menu') ?? 'Close Menu' }}"></button>
+
+@once
+@include('notifications._center')
+@endonce
+
+@once
+<script src="{{ asset('quotation-generator/crm-sidebar.js') }}?v=crm-sidebar-drawer-v2"></script>
+<script src="{{ asset('crm-dropdown.js') }}?v={{ time() }}"></script>
+@endonce
+<!-- CRM TASK SIDEBAR ACTIVE STATUS START -->
+<style>
+ .crm-task-status-link.active{
+  color:var(--red)!important;
+  background:#fff0f2!important;
+  border-color:#f2c4ca!important;
+  font-weight:bold!important
+ }
+
+ .crm-task-status-link.active:hover{
+  color:var(--red)!important;
+  background:#ffe8ec!important
+ }
+ .crm-sidebar-collapse-btn i {
+  display: inline-block !important;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transform-origin: center center !important;
+ }
+ html[dir="ltr"] .crm-sidebar-collapse-btn i,
+ html:not([dir="rtl"]) .crm-sidebar-collapse-btn i {
+  transform: rotate(180deg);
+ }
+ html[dir="ltr"].crm-sidebar-collapsed .crm-sidebar-collapse-btn i,
+ html:not([dir="rtl"]).crm-sidebar-collapsed .crm-sidebar-collapse-btn i {
+  transform: rotate(0deg) !important;
+ }
+ html[dir="rtl"] .crm-sidebar-collapse-btn i {
+  transform: rotate(0deg);
+ }
+ html[dir="rtl"].crm-sidebar-collapsed .crm-sidebar-collapse-btn i {
+  transform: rotate(180deg) !important;
+ }
+</style>
+<!-- CRM TASK SIDEBAR ACTIVE STATUS END -->

@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200;300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@font-face {
+  font-family: 'Tajawal';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Plus Jakarta Sans'), local('Cairo');
+}
+
+@font-face {
+  font-family: 'Tajawal';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('Plus Jakarta Sans'), local('Cairo');
+}
+
+@font-face {
+  font-family: 'Tajawal';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Plus Jakarta Sans'), local('Cairo');
+}
+
+@font-face {
+  font-family: 'Tajawal';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: local('Plus Jakarta Sans'), local('Cairo');
+}
+
+@font-face {
+  font-family: 'Tajawal';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: local('Plus Jakarta Sans'), local('Cairo');
+}
+
+:root {
+  --font-primary: 'Plus Jakarta Sans', 'Cairo', sans-serif !important;
+  --font-mono: 'JetBrains Mono', 'Plus Jakarta Sans', monospace !important;
+}
+
+body,
+html,
+#crmSidebar,
+#crmSidebar *,
+.crm-side,
+.crm-side *,
+.crm-label,
+.crm-side .label,
+#crmSidebar .label {
+  font-family: 'Plus Jakarta Sans', 'Cairo', sans-serif !important;
+}
+
+.font-mono, pre, code, .font-numeric, .badge-mono,
+#crmSidebar .crm-count, #crmSidebar .count, .crm-side .crm-count, .crm-side .count {
+  font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace !important;
+}
+
+input, select, textarea {
+  font-family: 'Tajawal', 'Cairo', 'Plus Jakarta Sans', sans-serif !important;
+}
+
+button {
+  font-family: var(--font-primary);
+}
+
+*, *::before, *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.bi,
+[class^="bi-"],
+[class*=" bi-"] {
+  font-family: bootstrap-icons !important;
+}

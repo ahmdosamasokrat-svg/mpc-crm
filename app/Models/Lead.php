@@ -1,0 +1,267 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\LogsActivity;
+use App\Security\CrmPermission;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Lead extends Model
+{
+    use LogsActivity, SoftDeletes;
+    protected $fillable = [
+        'parent_lead_id',
+        'referred_by_lead_id',
+        'guardian_id',
+        'lead_status_id',
+        'branch_id',
+        'name',
+        'first_name',
+        'last_name',
+        'company_name',
+        'activity',
+        'governorate',
+        'address',
+        'users_count',
+        'branches_count',
+        'job_title',
+        'disinterest_reason',
+        'solution_type',
+        'lines_count',
+        'extensions',
+        'departments',
+        'quotation_file_path',
+        'phone',
+        'call_attempts_count',
+        'last_call_status',
+        'last_outcome_category',
+        'first_contacted_at',
+        'last_contacted_at',
+        'email',
+        'birth_date',
+        'source',
+        'assigned_employee',
+        'assigned_user_id',
+        'created_by',
+        'created_by_user_id',
+        'notes',
+        'custom_fields',
+        'next_follow_up_at',
+        'deleted_by_user_id',
+        'deleted_from_stage_id',
+        'deleted_reason',
+    ];
+    protected function casts(): array
+    {
+        return [
+            'quotation_sent' => 'boolean',
+            'users_count' => 'integer',
+            'branches_count' => 'integer',
+            'lines_count' => 'integer',
+            'custom_fields' => 'array',
+            'birth_date' => 'date',
+            'call_attempts_count' => 'integer',
+            'first_contacted_at' => 'datetime',
+            'last_contacted_at' => 'datetime',
+            'next_follow_up_at' => 'datetime',
+            'deleted_at' => 'datetime',
+        ];
+    }
+
+    public function scopeAccessibleTo(Builder $query, User $user): Builder
+    {
+        if (! $user->hasPermission(CrmPermission::BRANCHES_SCOPE_ALL)) {
+            if ($user->branch_id !== null) {
+                $query->where('leads.branch_id', $user->branch_id);
+            } else {
+                $fallbackBranchId = Branch::query()->where('code', 'main')->value('id');
+                if ($fallbackBranchId) {
+                    $query->where(function (Builder $bq) use ($fallbackBranchId): void {
+                        $bq->where('leads.branch_id', $fallbackBranchId)
+                            ->orWhereNull('leads.branch_id');
+                    });
+                } else {
+                    $query->whereNull('leads.branch_id');
+                }
+            }
+        }
+
+        if (! $user->hasPermission(CrmPermission::LEADS_SCOPE_ALL)) {
+            $groupIds = [];
+
+            if ($user->hasPermission(CrmPermission::LEADS_SCOPE_GROUP)) {
+                $user->loadMissing('groups');
+                $groupIds = $user->groups->modelKeys();
+            }
+
+            $query->where(
+                static function (Builder $accessQuery) use (
+                    $user,
+                    $groupIds,
+                ): void {
+                    $accessQuery
+                        ->where('leads.assigned_user_id', $user->getKey())
+                        ->orWhere('leads.created_by_user_id', $user->getKey());
+
+                    if ($groupIds !== []) {
+                        $accessQuery->orWhereHas(
+                            'assignedUser.groups',
+                            static fn (Builder $groupQuery): Builder => $groupQuery
+                                ->whereKey($groupIds),
+                        );
+                    }
+                },
+            );
+        }
+
+        if ($user->hasRestrictedPipelineStageAccess()) {
+            $query->whereHas(
+                'status.stage',
+                static fn (Builder $stages): Builder => $stages->visibleTo($user),
+            );
+        }
+
+        return $query;
+    }
+
+    public function isAccessibleTo(User $user): bool
+    {
+        return self::query()
+            ->whereKey($this->getKey())
+            ->accessibleTo($user)
+            ->exists();
+    }
+
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(
+            LeadStatus::class,
+            'lead_status_id'
+        );
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class,
+            'assigned_user_id'
+        );
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class,
+            'created_by_user_id'
+        );
+    }
+
+    public function campaigns(): BelongsToMany
+    {
+        return $this->belongsToMany(Campaign::class)->withTimestamps();
+    }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(
+            LeadStatusHistory::class
+        )->orderByDesc('changed_at');
+    }
+
+    public function followups(): HasMany
+    {
+        return $this->hasMany(
+            LeadFollowup::class
+        )->orderByDesc('followed_up_at');
+    }
+
+    public function latestFollowup(): HasOne
+    {
+        return $this->hasOne(
+            LeadFollowup::class
+        )->latestOfMany('followed_up_at');
+    }
+
+    public function stageValues(): HasMany
+    {
+        return $this->hasMany(LeadStageFieldValue::class, 'lead_id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+    public function documents(): HasMany
+    {
+        return $this->hasMany(LeadDocument::class, 'lead_id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+    }
+    public function deletedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deleted_by_user_id');
+    }
+
+    public function deletedFromStage(): BelongsTo
+    {
+        return $this->belongsTo(PipelineStage::class, 'deleted_from_stage_id');
+    }
+
+
+    public function parentLead(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_lead_id');
+    }
+
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by_lead_id');
+    }
+
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(self::class, 'referred_by_lead_id')->orderByDesc('created_at');
+    }
+
+    public function clonedLeads(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_lead_id');
+    }
+
+    public function guardian(): BelongsTo
+    {
+        return $this->belongsTo(Guardian::class, 'guardian_id');
+    }
+
+    public function siblings(): HasMany
+    {
+        return $this->hasMany(self::class, 'guardian_id', 'guardian_id')
+            ->where('id', '!=', $this->id);
+    }
+
+    public function getAgeAttribute(): ?int
+    {
+        if (empty($this->birth_date)) {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($this->birth_date)->age;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public function currentStage(): ?PipelineStage
+    {
+        return $this->status?->stage;
+    }
+}
